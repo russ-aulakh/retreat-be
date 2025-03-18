@@ -302,7 +302,7 @@ export default function RetreatPlanner() {
 
     try {
       // Example fetch
-      const response = await fetch("http://localhost:8081/analyzeCosts", {
+      const response = await fetch("https://re.flyfast.io/analyzeCosts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
