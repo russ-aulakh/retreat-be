@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft, ExternalLink } from "lucide-react"
+import { openDB } from "idb"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,30 +25,50 @@ type TripDetails = {
   offers: EmployeeOffer[]
 }
 
+// IndexedDB helpers
+const dbName = "RetreatPlannerDB"
+const storeName = "RetreatPlannerStore"
+
+async function getDB() {
+  return openDB(dbName, 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName)
+      }
+    },
+  })
+}
+async function loadFromDB(key: string) {
+  const db = await getDB()
+  return db.get(storeName, key)
+}
+
 export default function TripDetailsPage() {
   const router = useRouter()
-  const { id } = useParams() // Get the "id" param
+  const { id } = useParams()
   const [tripDetails, setTripDetails] = useState<TripDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const stored = localStorage.getItem("selectedTrip")
-    if (stored) {
-      setTripDetails(JSON.parse(stored))
-    } else {
-      // Fallback mock if none found
-      setTripDetails({
-        startDate: "2025-05-01",
-        returnDate: "2025-05-06",
-        destination: "CUN",
-        totalCost: 2000,
-        offers: [
-          { origin: "LAX", cabin: "BUSINESS", url: "#", price: 1200 },
-          { origin: "JFK", cabin: "ECONOMY", url: "#", price: 800 },
-        ],
-      })
-    }
-    setIsLoading(false)
+    ;(async () => {
+      const stored = await loadFromDB("selectedTrip")
+      if (stored) {
+        setTripDetails(stored)
+      } else {
+        // Fallback if none found
+        setTripDetails({
+          startDate: "2025-05-01",
+          returnDate: "2025-05-06",
+          destination: "CUN",
+          totalCost: 2000,
+          offers: [
+            { origin: "LAX", cabin: "BUSINESS", url: "#", price: 1200 },
+            { origin: "JFK", cabin: "ECONOMY", url: "#", price: 800 },
+          ],
+        })
+      }
+      setIsLoading(false)
+    })()
   }, [id])
 
   const formatCurrency = (amt: number) =>
@@ -109,7 +130,11 @@ export default function TripDetailsPage() {
                         </TableCell>
                         <TableCell className="font-semibold">{formatCurrency(offer.price)}</TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm" onClick={() => window.open(offer.url, "_blank")}>
+                          <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(offer.url, "_blank")}
+                          >
                             Book <ExternalLink className="ml-1 h-3 w-3" />
                           </Button>
                         </TableCell>
@@ -134,13 +159,15 @@ export default function TripDetailsPage() {
                 <li>
                   <span className="font-medium">Trip Length:</span>{" "}
                   {Math.round(
-                      (new Date(tripDetails.returnDate).getTime() - new Date(tripDetails.startDate).getTime()) /
+                      (new Date(tripDetails.returnDate).getTime() -
+                          new Date(tripDetails.startDate).getTime()) /
                       (1000 * 60 * 60 * 24)
                   )}{" "}
                   nights
                 </li>
                 <li>
-                  <span className="font-medium">Total Cost:</span> {formatCurrency(tripDetails.totalCost)}
+                  <span className="font-medium">Total Cost:</span>{" "}
+                  {formatCurrency(tripDetails.totalCost)}
                 </li>
                 <li>
                   <span className="font-medium">Number of Employees:</span> {tripDetails.offers.length}
