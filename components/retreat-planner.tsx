@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { openDB } from "idb" // Import IndexedDB wrapper
 import {
   Select,
   SelectContent,
@@ -50,6 +51,9 @@ import AdvancedFiltersPopover from "./improved-filters-popover"
 
 // Register chart components
 ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTitle, Tooltip, Legend)
+
+const dbName = "RetreatPlannerDB"
+const storeName = "RetreatPlannerStore"
 
 const cabinOptions = [
   { value: "ECONOMY", label: "Economy" },
@@ -134,6 +138,23 @@ const generateEmployees = () => {
   }
   return employees;
 };
+async function getDB() {
+  return openDB(dbName, 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName)
+      }
+    },
+  })
+}
+async function saveToDB(key: string, data: any) {
+  const db = await getDB()
+  return db.put(storeName, data, key)
+}
+async function loadFromDB(key: string) {
+  const db = await getDB()
+  return db.get(storeName, key)
+}
 export default function RetreatPlanner() {
   const [tripParams, setTripParams] = useState<TripParams>({
     startDate: new Date("2025-07-01"),
@@ -153,31 +174,27 @@ export default function RetreatPlanner() {
 
   // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("plannerData")
-    if (saved) {
-      const parsed = JSON.parse(saved)
-
-      // Convert strings to Date objects
-      if (parsed.tripParams?.startDate) {
-        parsed.tripParams.startDate = new Date(parsed.tripParams.startDate)
+    ;(async () => {
+      const saved: any = await loadFromDB("plannerData")
+      if (saved) {
+        if (saved.tripParams?.startDate) {
+          saved.tripParams.startDate = new Date(saved.tripParams.startDate)
+        }
+        if (saved.tripParams?.returnDate) {
+          saved.tripParams.returnDate = new Date(saved.tripParams.returnDate)
+        }
+        setTripParams(saved.tripParams ?? tripParams)
+        setEmployees(saved.employees ?? [])
+        setSearchResults(saved.searchResults ?? [])
+        setHasSearched(saved.hasSearched ?? false)
       }
-      if (parsed.tripParams?.returnDate) {
-        parsed.tripParams.returnDate = new Date(parsed.tripParams.returnDate)
-      }
-
-      setTripParams(parsed.tripParams ?? tripParams)
-      setEmployees(parsed.employees ?? [])
-      setSearchResults(parsed.searchResults ?? [])
-      setHasSearched(parsed.hasSearched ?? false)
-    }
+    })()
   }, [])
 
-  // Save to localStorage on changes
+  // Save to IndexedDB
   useEffect(() => {
-    localStorage.setItem(
-        "plannerData",
-        JSON.stringify({ employees, searchResults, hasSearched, tripParams })
-    )
+    const data = { employees, searchResults, hasSearched, tripParams }
+    saveToDB("plannerData", data)
   }, [employees, searchResults, hasSearched, tripParams])
 
   const formatCurrency = (amount: number) =>
@@ -335,9 +352,8 @@ export default function RetreatPlanner() {
     }
   }
 
-  // Select & store a result
-  const handleResultSelect = (res: SearchResult) => {
-    localStorage.setItem("selectedTrip", JSON.stringify(res))
+  const handleResultSelect = async (res: SearchResult) => {
+    await saveToDB("selectedTrip", res)
     const tripId = `${res.destination}-${res.startDate}-${res.returnDate}`.replace(/[^a-zA-Z0-9]/g, "-")
     window.location.href = `/trip/${tripId}`
   }
