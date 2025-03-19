@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { openDB } from "idb" // Import IndexedDB wrapper
+import { openDB } from "idb"
 import {
   Select,
   SelectContent,
@@ -79,7 +79,6 @@ const layoverOptions = [
   { label: "Any", value: 1800 },
 ]
 
-// Cycle through these for each destination
 const barColors = [
   "#FF6384","#36A2EB","#FFCE56","#4BC0C0","#9966FF","#FF9F40","#8B0000","#008000","#00008B","#FFD700",
   "#FFA07A","#20B2AA","#778899","#D2691E","#FF4500","#00FF7F","#4682B4","#C71585","#708090","#FF1493"
@@ -91,7 +90,7 @@ const euAirports = ["LHR", "CDG"]
 const cabinClasses = ["ECONOMY","ECONOMY","ECONOMY","ECONOMY","ECONOMY","ECONOMY","ECONOMY","BUSINESS","BUSINESS"]
 
 const generateEmployees = () => {
-  let employees = []
+  const employees: Employee[] = []
   for (let i = 1; i <= 40; i++) {
     let origin
     if (i <= 32) {
@@ -105,7 +104,7 @@ const generateEmployees = () => {
       id: `emp${i}`,
       employeeName: `Employee ${i}`,
       origin,
-      cabin: cabinClasses[Math.floor(Math.random()*cabinClasses.length)],
+      cabin: cabinClasses[Math.floor(Math.random() * cabinClasses.length)],
       filters: {
         numStops: "ANY-STOPS",
         maxLayover: 600,
@@ -244,7 +243,7 @@ export default function RetreatPlanner() {
   }
 
   const duplicateEmployee = (employee: Employee) => {
-    const clone = { ...JSON.parse(JSON.stringify(employee)) }
+    const clone = JSON.parse(JSON.stringify(employee)) as Employee
     clone.id = `emp${employees.length + 1}`
     setEmployees([...employees, clone])
   }
@@ -266,19 +265,19 @@ export default function RetreatPlanner() {
         !tripParams.destinations.includes(code) &&
         tripParams.destinations.length < 20
     ) {
-      setTripParams({
-        ...tripParams,
-        destinations: [...tripParams.destinations, code],
-      })
+      setTripParams((prev) => ({
+        ...prev,
+        destinations: [...prev.destinations, code],
+      }))
       setDestinationInput("")
     }
   }
 
   const removeDestination = (dest: string) => {
-    setTripParams({
-      ...tripParams,
-      destinations: tripParams.destinations.filter((d) => d !== dest),
-    })
+    setTripParams((prev) => ({
+      ...prev,
+      destinations: prev.destinations.filter((d) => d !== dest),
+    }))
   }
 
   // Search
@@ -374,17 +373,15 @@ export default function RetreatPlanner() {
     colorIndex++
   }
 
-  // Toggle button for each destination
+  // Toggle destination
   const toggleDestination = (dest: string) => {
     setVisibleDestinations((prev) =>
         prev.includes(dest) ? prev.filter((d) => d !== dest) : [...prev, dest]
     )
   }
 
-  // Filter searchResults for chart
-  const filteredResults = searchResults.filter((r) =>
-      visibleDestinations.includes(r.destination)
-  )
+  // Filtered chart data
+  const filteredResults = searchResults.filter((r) => visibleDestinations.includes(r.destination))
 
   return (
       <div className="space-y-6">
@@ -415,14 +412,14 @@ export default function RetreatPlanner() {
                           mode="single"
                           selected={tripParams.startDate}
                           onSelect={(date) =>
-                              setTripParams({
-                                ...tripParams,
+                              setTripParams((prev) => ({
+                                ...prev,
                                 startDate: date ?? undefined,
                                 returnDate:
-                                    tripParams.returnDate && date && tripParams.returnDate < date
+                                    prev.returnDate && date && prev.returnDate < date
                                         ? undefined
-                                        : tripParams.returnDate,
-                              })
+                                        : prev.returnDate,
+                              }))
                           }
                           disabled={(date) => date < new Date()}
                       />
@@ -445,7 +442,10 @@ export default function RetreatPlanner() {
                           mode="single"
                           selected={tripParams.returnDate}
                           onSelect={(date) =>
-                              setTripParams({ ...tripParams, returnDate: date ?? undefined })
+                              setTripParams((prev) => ({
+                                ...prev,
+                                returnDate: date ?? undefined,
+                              }))
                           }
                           disabled={(date) =>
                               !tripParams.startDate || (date && date < tripParams.startDate)
@@ -463,11 +463,11 @@ export default function RetreatPlanner() {
                       value={tripParams.minTripLength.toString()}
                       onValueChange={(value) => {
                         const val = Number(value)
-                        setTripParams({
-                          ...tripParams,
+                        setTripParams((prev) => ({
+                          ...prev,
                           minTripLength: val,
-                          maxTripLength: Math.max(val, tripParams.maxTripLength),
-                        })
+                          maxTripLength: Math.max(val, prev.maxTripLength),
+                        }))
                       }}
                   >
                     <SelectTrigger>
@@ -484,7 +484,10 @@ export default function RetreatPlanner() {
                   <Select
                       value={tripParams.maxTripLength.toString()}
                       onValueChange={(value) =>
-                          setTripParams({ ...tripParams, maxTripLength: Number(value) })
+                          setTripParams((prev) => ({
+                            ...prev,
+                            maxTripLength: Number(value),
+                          }))
                       }
                   >
                     <SelectTrigger>
@@ -510,9 +513,10 @@ export default function RetreatPlanner() {
               <div className="flex gap-2">
                 <Input
                     value={destinationInput}
-                    onChange={(e) =>
-                        setDestinationInput(e.target.value.toUpperCase().slice(0, 3))
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase().slice(0, 3)
+                      setDestinationInput(val)
+                    }}
                     placeholder="Enter 3-letter code"
                     className="uppercase"
                     maxLength={3}
@@ -664,10 +668,16 @@ export default function RetreatPlanner() {
                                   max={23}
                                   value={emp.filters.arrivalHourStart}
                                   onChange={(e) => {
-                                    const val = Math.max(0, Math.min(23, Number(e.target.value) || 0))
+                                    const val = Math.max(
+                                        0,
+                                        Math.min(23, Number(e.target.value) || 0)
+                                    )
                                     updateEmployee({
                                       ...emp,
-                                      filters: { ...emp.filters, arrivalHourStart: val },
+                                      filters: {
+                                        ...emp.filters,
+                                        arrivalHourStart: val,
+                                      },
                                     })
                                   }}
                                   className="h-8"
@@ -681,10 +691,16 @@ export default function RetreatPlanner() {
                                   max={23}
                                   value={emp.filters.arrivalHourEnd}
                                   onChange={(e) => {
-                                    const val = Math.max(0, Math.min(23, Number(e.target.value) || 0))
+                                    const val = Math.max(
+                                        0,
+                                        Math.min(23, Number(e.target.value) || 0)
+                                    )
                                     updateEmployee({
                                       ...emp,
-                                      filters: { ...emp.filters, arrivalHourEnd: val },
+                                      filters: {
+                                        ...emp.filters,
+                                        arrivalHourEnd: val,
+                                      },
                                     })
                                   }}
                                   className="h-8"
@@ -751,17 +767,23 @@ export default function RetreatPlanner() {
                   <CardHeader>
                     <CardTitle>Cost Comparison</CardTitle>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {/* Toggle buttons to show/hide airports */}
-                      {uniqueDests.map((dest) => (
-                          <Button
-                              key={dest}
-                              variant={visibleDestinations.includes(dest) ? "default" : "outline"}
-                              onClick={() => toggleDestination(dest)}
-                              size="sm"
-                          >
-                            {dest}
-                          </Button>
-                      ))}
+                      {uniqueDests.map((dest) => {
+                        const isActive = visibleDestinations.includes(dest)
+                        return (
+                            <Button
+                                key={dest}
+                                onClick={() => toggleDestination(dest)}
+                                size="sm"
+                                style={{
+                                  backgroundColor: isActive ? destinationColorMap[dest] : "transparent",
+                                  color: isActive ? "#fff" : destinationColorMap[dest],
+                                  borderColor: destinationColorMap[dest],
+                                }}
+                            >
+                              {dest}
+                            </Button>
+                        )
+                      })}
                     </div>
                   </CardHeader>
                   <CardContent>
