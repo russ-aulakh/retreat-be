@@ -3,8 +3,12 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Company Retreat Planner",
-  description: "Plan your next company retreat with ease",
+  title: "Retreat Planner",
+  description: "Plan your next retreat with ease",
+  authors: [{ name: "Russ Aulakh", url: "https://russ-aulakh.com" }],
+  other: {
+    linkedin: "https://www.linkedin.com/in/russ-aulakh/",
+  },
 }
 
 export default function RootLayout({
