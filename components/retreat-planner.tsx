@@ -49,7 +49,6 @@ import { Bar } from "react-chartjs-2"
 import { Employee, TripParams, SearchResult } from "@/components/types"
 import AdvancedFiltersPopover from "./improved-filters-popover"
 
-// Register chart components
 ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTitle, Tooltip, Legend)
 
 const dbName = "RetreatPlannerDB"
@@ -80,37 +79,33 @@ const layoverOptions = [
   { label: "Any", value: 1800 },
 ]
 
-// A small palette to cycle through for each unique destination
+// Cycle through these for each destination
 const barColors = [
-  "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40", "#8B0000", "#008000", "#00008B", "#FFD700",
-  "#FFA07A", "#20B2AA", "#778899", "#D2691E", "#FF4500", "#00FF7F", "#4682B4", "#C71585", "#708090", "#FF1493"
+  "#FF6384","#36A2EB","#FFCE56","#4BC0C0","#9966FF","#FF9F40","#8B0000","#008000","#00008B","#FFD700",
+  "#FFA07A","#20B2AA","#778899","#D2691E","#FF4500","#00FF7F","#4682B4","#C71585","#708090","#FF1493"
 ]
 
-const usAirports = ["JFK", "LAX", "ORD", "ATL", "DFW", "DEN", "SFO", "SEA", "MIA", "BOS"];
-const caAirports = ["YYZ", "YVR", "YUL", "YYC"];
-const euAirports = ["LHR", "CDG"];
-const cabinClasses = ["ECONOMY", "ECONOMY", "ECONOMY", "ECONOMY", "ECONOMY", "ECONOMY", "ECONOMY", "BUSINESS", "BUSINESS"];
+const usAirports = ["JFK", "LAX", "ORD", "ATL", "DFW", "DEN", "SFO", "SEA", "MIA", "BOS"]
+const caAirports = ["YYZ", "YVR", "YUL", "YYC"]
+const euAirports = ["LHR", "CDG"]
+const cabinClasses = ["ECONOMY","ECONOMY","ECONOMY","ECONOMY","ECONOMY","ECONOMY","ECONOMY","BUSINESS","BUSINESS"]
 
 const generateEmployees = () => {
-  let employees = [];
+  let employees = []
   for (let i = 1; i <= 40; i++) {
-    let origin;
+    let origin
     if (i <= 32) {
-      // 80% from the USA
-      origin = usAirports[i % usAirports.length];
+      origin = usAirports[i % usAirports.length] // 80% from US
     } else if (i <= 38) {
-      // 15% from Canada
-      origin = caAirports[i % caAirports.length];
+      origin = caAirports[i % caAirports.length] // 15% from CA
     } else {
-      // 5% from Europe
-      origin = euAirports[i % euAirports.length];
+      origin = euAirports[i % euAirports.length] // 5% from EU
     }
-
     employees.push({
       id: `emp${i}`,
       employeeName: `Employee ${i}`,
       origin,
-      cabin: cabinClasses[Math.floor(Math.random() * cabinClasses.length)],
+      cabin: cabinClasses[Math.floor(Math.random()*cabinClasses.length)],
       filters: {
         numStops: "ANY-STOPS",
         maxLayover: 600,
@@ -134,10 +129,11 @@ const generateEmployees = () => {
         requestLocation: "US",
         avoidUSConnections: false,
       },
-    });
+    })
   }
-  return employees;
-};
+  return employees
+}
+
 async function getDB() {
   return openDB(dbName, 1, {
     upgrade(db) {
@@ -147,14 +143,17 @@ async function getDB() {
     },
   })
 }
+
 async function saveToDB(key: string, data: any) {
   const db = await getDB()
   return db.put(storeName, data, key)
 }
+
 async function loadFromDB(key: string) {
   const db = await getDB()
   return db.get(storeName, key)
 }
+
 export default function RetreatPlanner() {
   const [tripParams, setTripParams] = useState<TripParams>({
     startDate: new Date("2025-07-01"),
@@ -165,14 +164,16 @@ export default function RetreatPlanner() {
     tripType: "ROUND-TRIP",
   })
 
-  const [employees, setEmployees] = useState<Employee[]>(generateEmployees());
-
+  const [employees, setEmployees] = useState<Employee[]>(generateEmployees())
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
 
-  // Load from localStorage
+  // For toggling which airports appear in the chart
+  const [visibleDestinations, setVisibleDestinations] = useState<string[]>([])
+
+  // Load from IndexedDB
   useEffect(() => {
     ;(async () => {
       const saved: any = await loadFromDB("plannerData")
@@ -197,10 +198,16 @@ export default function RetreatPlanner() {
     saveToDB("plannerData", data)
   }, [employees, searchResults, hasSearched, tripParams])
 
+  // Whenever new results come in, reset the visibleDestinations list
+  useEffect(() => {
+    const uniqueDests = Array.from(new Set(searchResults.map((r) => r.destination)))
+    setVisibleDestinations(uniqueDests)
+  }, [searchResults])
+
   const formatCurrency = (amount: number) =>
       new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)
 
-  // Add/Remove employees
+  // Employee management
   const addEmployee = () => {
     setEmployees((prev) => [
       ...prev,
@@ -250,7 +257,7 @@ export default function RetreatPlanner() {
     setEmployees(employees.map((e) => (e.id === updated.id ? updated : e)))
   }
 
-  // Destinations
+  // Destination input
   const [destinationInput, setDestinationInput] = useState("")
   const addDestination = () => {
     const code = destinationInput.trim().toUpperCase()
@@ -274,7 +281,7 @@ export default function RetreatPlanner() {
     })
   }
 
-  // Perform search
+  // Search
   const handleSearch = async () => {
     if (!tripParams.startDate || !tripParams.returnDate) return
     setIsLoading(true)
@@ -332,7 +339,7 @@ export default function RetreatPlanner() {
       setHasSearched(true)
     } catch (error) {
       console.error("Error fetching data:", error)
-      // Fallback example
+      // Simple fallback
       setSearchResults([
         {
           startDate: "2025-06-15",
@@ -358,7 +365,7 @@ export default function RetreatPlanner() {
     window.location.href = `/trip/${tripId}`
   }
 
-  // Build a color map for each unique destination
+  // Unique destinations color map
   const uniqueDests = Array.from(new Set(searchResults.map((r) => r.destination)))
   const destinationColorMap: Record<string, string> = {}
   let colorIndex = 0
@@ -366,6 +373,18 @@ export default function RetreatPlanner() {
     destinationColorMap[d] = barColors[colorIndex % barColors.length]
     colorIndex++
   }
+
+  // Toggle button for each destination
+  const toggleDestination = (dest: string) => {
+    setVisibleDestinations((prev) =>
+        prev.includes(dest) ? prev.filter((d) => d !== dest) : [...prev, dest]
+    )
+  }
+
+  // Filter searchResults for chart
+  const filteredResults = searchResults.filter((r) =>
+      visibleDestinations.includes(r.destination)
+  )
 
   return (
       <div className="space-y-6">
@@ -375,9 +394,8 @@ export default function RetreatPlanner() {
             <CardDescription>Set your travel dates, trip length, etc.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Date range + Trip length */}
+            {/* Dates & length */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Date Range */}
               <div className="space-y-2">
                 <Label htmlFor="date-range">Date Range</Label>
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -389,9 +407,7 @@ export default function RetreatPlanner() {
                           className="w-full justify-start text-left font-normal"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {tripParams.startDate
-                            ? format(tripParams.startDate, "PPP")
-                            : "Start Date"}
+                        {tripParams.startDate ? format(tripParams.startDate, "PPP") : "Start Date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -421,9 +437,7 @@ export default function RetreatPlanner() {
                           disabled={!tripParams.startDate}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {tripParams.returnDate
-                            ? format(tripParams.returnDate, "PPP")
-                            : "Return Date"}
+                        {tripParams.returnDate ? format(tripParams.returnDate, "PPP") : "Return Date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -441,8 +455,7 @@ export default function RetreatPlanner() {
                   </Popover>
                 </div>
               </div>
-
-              {/* Trip Length */}
+              {/* Trip length */}
               <div className="space-y-2">
                 <Label>Trip Length (nights)</Label>
                 <div className="flex gap-2">
@@ -497,7 +510,9 @@ export default function RetreatPlanner() {
               <div className="flex gap-2">
                 <Input
                     value={destinationInput}
-                    onChange={(e) => setDestinationInput(e.target.value.toUpperCase().slice(0, 3))}
+                    onChange={(e) =>
+                        setDestinationInput(e.target.value.toUpperCase().slice(0, 3))
+                    }
                     placeholder="Enter 3-letter code"
                     className="uppercase"
                     maxLength={3}
@@ -517,10 +532,7 @@ export default function RetreatPlanner() {
                 {tripParams.destinations.map((dest) => (
                     <Badge key={dest} variant="default" className="cursor-pointer">
                       {dest}
-                      <X
-                          className="ml-1 h-3 w-3"
-                          onClick={() => removeDestination(dest)}
-                      />
+                      <X className="ml-1 h-3 w-3" onClick={() => removeDestination(dest)} />
                     </Badge>
                 ))}
               </div>
@@ -564,7 +576,9 @@ export default function RetreatPlanner() {
                         <TableCell>
                           <Input
                               value={emp.employeeName}
-                              onChange={(e) => updateEmployee({ ...emp, employeeName: e.target.value })}
+                              onChange={(e) =>
+                                  updateEmployee({ ...emp, employeeName: e.target.value })
+                              }
                               className="h-8"
                           />
                         </TableCell>
@@ -600,7 +614,10 @@ export default function RetreatPlanner() {
                           <Select
                               value={emp.filters.numStops}
                               onValueChange={(val) =>
-                                  updateEmployee({ ...emp, filters: { ...emp.filters, numStops: val } })
+                                  updateEmployee({
+                                    ...emp,
+                                    filters: { ...emp.filters, numStops: val },
+                                  })
                               }
                           >
                             <SelectTrigger className="h-8">
@@ -621,10 +638,7 @@ export default function RetreatPlanner() {
                               onValueChange={(val) =>
                                   updateEmployee({
                                     ...emp,
-                                    filters: {
-                                      ...emp.filters,
-                                      maxLayover: Number(val),
-                                    },
+                                    filters: { ...emp.filters, maxLayover: Number(val) },
                                   })
                               }
                           >
@@ -651,7 +665,10 @@ export default function RetreatPlanner() {
                                   value={emp.filters.arrivalHourStart}
                                   onChange={(e) => {
                                     const val = Math.max(0, Math.min(23, Number(e.target.value) || 0))
-                                    updateEmployee({ ...emp, filters: { ...emp.filters, arrivalHourStart: val } })
+                                    updateEmployee({
+                                      ...emp,
+                                      filters: { ...emp.filters, arrivalHourStart: val },
+                                    })
                                   }}
                                   className="h-8"
                               />
@@ -665,7 +682,10 @@ export default function RetreatPlanner() {
                                   value={emp.filters.arrivalHourEnd}
                                   onChange={(e) => {
                                     const val = Math.max(0, Math.min(23, Number(e.target.value) || 0))
-                                    updateEmployee({ ...emp, filters: { ...emp.filters, arrivalHourEnd: val } })
+                                    updateEmployee({
+                                      ...emp,
+                                      filters: { ...emp.filters, arrivalHourEnd: val },
+                                    })
                                   }}
                                   className="h-8"
                               />
@@ -718,7 +738,6 @@ export default function RetreatPlanner() {
           </CardFooter>
         </Card>
 
-        {/* Results */}
         {hasSearched && (
             <Tabs defaultValue="chart">
               <TabsList className="grid w-full grid-cols-2">
@@ -726,33 +745,34 @@ export default function RetreatPlanner() {
                 <TabsTrigger value="chart">Search Results</TabsTrigger>
               </TabsList>
 
-              {/* Chart Tab */}
+              {/* Chart */}
               <TabsContent value="chart">
                 <Card>
                   <CardHeader>
                     <CardTitle>Cost Comparison</CardTitle>
-                    {/* Destination color key */}
-                    <div className="flex flex-wrap gap-4 mt-2">
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {/* Toggle buttons to show/hide airports */}
                       {uniqueDests.map((dest) => (
-                          <div key={dest} className="flex items-center gap-2">
-                            <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: destinationColorMap[dest] }}
-                            />
-                            <span className="text-sm">{dest}</span>
-                          </div>
+                          <Button
+                              key={dest}
+                              variant={visibleDestinations.includes(dest) ? "default" : "outline"}
+                              onClick={() => toggleDestination(dest)}
+                              size="sm"
+                          >
+                            {dest}
+                          </Button>
                       ))}
                     </div>
                   </CardHeader>
                   <CardContent>
                     <Bar
                         data={{
-                          labels: searchResults.map((r) => r.destination),
+                          labels: filteredResults.map((r) => r.destination),
                           datasets: [
                             {
                               label: "Total Cost",
-                              data: searchResults.map((r) => r.totalCost),
-                              backgroundColor: searchResults.map(
+                              data: filteredResults.map((r) => r.totalCost),
+                              backgroundColor: filteredResults.map(
                                   (r) => destinationColorMap[r.destination]
                               ),
                             },
@@ -763,22 +783,21 @@ export default function RetreatPlanner() {
                           onClick: (_evt, elements) => {
                             if (elements.length > 0) {
                               const index = elements[0].index
-                              handleResultSelect(searchResults[index])
+                              handleResultSelect(filteredResults[index])
                             }
                           },
                           plugins: {
                             tooltip: {
                               callbacks: {
                                 label: (context) => {
-                                  const sr = searchResults[context.dataIndex]
+                                  const sr = filteredResults[context.dataIndex]
                                   return [
                                     `Cost: ${formatCurrency(sr.totalCost)}`,
                                     `Dates: ${sr.startDate} - ${sr.returnDate}`,
                                   ]
                                 },
                                 title: (context) => {
-                                  // Show destination in the tooltip header
-                                  const sr = searchResults[context[0].dataIndex]
+                                  const sr = filteredResults[context[0].dataIndex]
                                   return sr.destination
                                 },
                               },
@@ -789,7 +808,8 @@ export default function RetreatPlanner() {
                   </CardContent>
                 </Card>
               </TabsContent>
-              {/* Search Results Tab */}
+
+              {/* Search Results List */}
               <TabsContent value="results">
                 <Card>
                   <CardHeader>
@@ -803,13 +823,14 @@ export default function RetreatPlanner() {
                             selectedResult?.destination === res.destination &&
                             selectedResult?.startDate === res.startDate &&
                             selectedResult?.returnDate === res.returnDate
-
                         const key = `${res.destination}-${res.startDate}-${res.returnDate}-${i}`
                         return (
                             <div
                                 key={key}
                                 className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                                    isSelected ? "border-primary bg-primary/10" : "hover:bg-muted/50"
+                                    isSelected
+                                        ? "border-primary bg-primary/10"
+                                        : "hover:bg-muted/50"
                                 }`}
                                 onClick={() => handleResultSelect(res)}
                             >
@@ -823,7 +844,8 @@ export default function RetreatPlanner() {
                                 <div className="text-right">
                                   <p className="text-lg font-bold">{formatCurrency(res.totalCost)}</p>
                                   <p className="text-sm text-muted-foreground">
-                                    For {res.offers.length} employee{res.offers.length > 1 ? "s" : ""}
+                                    For {res.offers.length} employee
+                                    {res.offers.length > 1 ? "s" : ""}
                                   </p>
                                 </div>
                               </div>
