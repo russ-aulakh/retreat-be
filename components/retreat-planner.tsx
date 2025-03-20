@@ -958,11 +958,11 @@ const cabinClasses = ["ECONOMY","ECONOMY","ECONOMY","ECONOMY","ECONOMY","ECONOMY
 
 function generateEmployees() {
   const arr: Employee[] = [];
-  for (let i = 1; i <= 40; i++) {
+  for (let i = 1; i <= 20; i++) {
     let origin;
-    if (i <= 32) {
+    if (i <= 16) {
       origin = usAirports[i % usAirports.length];
-    } else if (i <= 38) {
+    } else if (i <= 19) {
       origin = caAirports[i % caAirports.length];
     } else {
       origin = euAirports[i % euAirports.length];
@@ -977,7 +977,7 @@ function generateEmployees() {
         maxLayover: 600,
         departHourStart: 0,
         departHourEnd: 23,
-        arrivalHourStart: 1,
+        arrivalHourStart: 0,
         arrivalHourEnd: 23,
         passengerType: { adults: 1, children: 0, infantInSeat: 0, infantOnLap: 0 },
         currency: "USD",
