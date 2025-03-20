@@ -59,3 +59,8 @@ export type EmployeeOffer = {
     url: string
     price: number
 }
+export interface IAirportShortcut {
+    code: string;
+    name: string;
+    airport_codes: string[];
+}
