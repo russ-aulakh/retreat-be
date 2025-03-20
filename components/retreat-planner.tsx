@@ -1042,6 +1042,7 @@ export default function RetreatPlanner() {
 
   // For displaying error about code restrictions
   const [destinationError, setDestinationError] = useState("");
+  const [paramError, setParamError] = useState("");
 
   // Load from IndexedDB on mount
   useEffect(() => {
@@ -1214,6 +1215,25 @@ export default function RetreatPlanner() {
   // Search
   // ---------------------------------------------------------------------------------
   const handleSearch = async () => {
+    setParamError("");
+
+    // 1) Check date difference <= 31 days
+    if (tripParams.startDate && tripParams.returnDate) {
+      const start = tripParams.startDate.getTime();
+      const end = tripParams.returnDate.getTime();
+      const daysDiff = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 31) {
+        setParamError("Start/End date range cannot exceed 31 days.");
+        return;
+      }
+    }
+
+    // 2) Check minTripLength and maxTripLength difference <= 3
+    if (tripParams.maxTripLength - tripParams.minTripLength > 3) {
+      setParamError("Min/Max trip length difference cannot exceed 3 days.");
+      return;
+    }
+
     if (!tripParams.startDate || !tripParams.returnDate) return;
     setIsLoading(true);
 
@@ -1438,7 +1458,7 @@ export default function RetreatPlanner() {
                 </div>
               </div>
             </div>
-
+            {paramError && <p className="text-sm text-red-500">{paramError}</p>}
             {/* Destinations */}
             <div className="space-y-2">
               <Label>Potential Destinations</Label>
