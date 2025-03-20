@@ -1466,6 +1466,9 @@ export default function RetreatPlanner() {
                 Up to 20 three-letter codes if none are four-letter. If any four-letter code is present,
                 total codes are limited to 2 (up to 2 special codes).
               </p>
+              <p className="text-sm text-muted-foreground">
+                Limitation: No designation as origin of any employee.
+              </p>
               <div className="flex gap-2">
                 <Input
                     value={destinationInput}
@@ -1489,7 +1492,7 @@ export default function RetreatPlanner() {
                 {tripParams.destinations.map((dest) => (
                     <Badge key={dest} variant="default" className="cursor-pointer">
                       {dest}
-                      <X className="ml-1 h-3 w-3" onClick={() => removeDestination(dest)} />
+                      <X className="ml-1 h-3 w-3" onClick={() => removeDestination(dest)}/>
                     </Badge>
                 ))}
               </div>
