@@ -1,6 +1,7 @@
-import type React from "react"
-import type { Metadata } from "next"
-import "./globals.css"
+import type React from "react";
+import type { Metadata } from "next";
+import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: "Retreat Planner",
@@ -9,17 +10,19 @@ export const metadata: Metadata = {
   other: {
     linkedin: "https://www.linkedin.com/in/russ-aulakh/",
   },
-}
+};
 
 export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
+                                     children,
+                                   }: {
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-background font-sans antialiased">{children}</body>
-    </html>
-  )
+      <html lang="en">
+      <body className="min-h-screen bg-background font-sans antialiased">
+      {children}
+      <Analytics />
+      </body>
+      </html>
+  );
 }
-
