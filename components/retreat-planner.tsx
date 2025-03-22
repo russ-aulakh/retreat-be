@@ -1469,6 +1469,9 @@ export default function RetreatPlanner() {
               <p className="text-sm text-muted-foreground">
                 Limitation: No designation as origin of any employee.
               </p>
+              <p className="text-sm text-muted-foreground">
+                Version 1.0
+              </p>
               <div className="flex gap-2">
                 <Input
                     value={destinationInput}
